@@ -7,3 +7,5 @@ authors = ["Francesco Uliana <francesco@uliana.it>"]
 egg-mode = "0.11.0"
 slack-hook = "0.6"
 tokio-core = "0.1.10"
+dotenv = "0.10.1"
+redis = "0.8.0"

@@ -1,18 +1,32 @@
 extern crate egg_mode;
-
 extern crate tokio_core;
 extern crate slack_hook;
+extern crate dotenv;
+extern crate redis;
+
+use dotenv::dotenv;
+use std::env;
+
+mod redisclient;
+
+
 use slack_hook::{Slack, PayloadBuilder};
 
 use tokio_core::reactor::Core;
 
 use egg_mode::user::UserID;
-use egg_mode::tweet::Timeline;
+use egg_mode::tweet::Tweet;
 
 fn get_token() -> egg_mode::Token {
 
-    let con_token = egg_mode::KeyPair::new("", "");
-    let access_token = egg_mode::KeyPair::new("", "");
+    let api_key = env::var("TWITTER_API_KEY").unwrap();
+    let api_secret = env::var("TWITTER_API_SECRET").unwrap();
+
+    let access_token = env::var("TWITTER_ACCESS_TOKEN").unwrap();
+    let access_token_secret = env::var("TWITTER_ACCESS_TOKEN_SECRET").unwrap();
+
+    let con_token = egg_mode::KeyPair::new(api_key, api_secret);
+    let access_token = egg_mode::KeyPair::new(access_token, access_token_secret);
     let token = egg_mode::Token::Access {
         consumer: con_token,
         access: access_token,
@@ -22,39 +36,56 @@ fn get_token() -> egg_mode::Token {
 
 }
 
-fn get_tweets (username: &str) -> Vec<String> {
+fn get_tweets (username: &str) -> Vec<Tweet> {
 
     let user = UserID::from(username);
 
     let mut core = Core::new().unwrap();
     let handle = core.handle();
-
     let token = get_token();
+    let bookmark = redisclient::get();
 
-    let mut tweetz : Timeline = egg_mode::tweet::user_timeline(user, false, false, &token, &handle);
+    println!("bookmark: {:?}", bookmark);
 
-    let mut vec = Vec::new();
+    let twitter_future =
+        egg_mode::tweet::user_timeline(user, false, false, &token, &handle)
+            .call(bookmark, None);
 
-    let tweets = &core.run(tweetz.start()).unwrap();
+    let tweets : Vec<Tweet> = core
+        .run(twitter_future)
+        .unwrap()
+        .to_vec();
 
-    for tweet in tweets {
-        vec.push(tweet.text.clone());
+    match tweets.first().clone().map(|tweet| tweet.id - 1) {
+        Some(tweet_id) => {
+            redisclient::set(tweet_id)
+        }
+        None => {
+            println!("nessun bookmark");
+        }
     }
 
-    return vec;
+    tweets
+
 }
 
 fn main() {
 
+    dotenv().ok();
+
     for tweet in get_tweets("ThisWeekInRust") {
-        slack_msg(tweet);
+        slack_msg(tweet.text.clone());
     }
 
 }
 
 
 fn slack_msg(msg: String) {
-    let slack = Slack::new("https://hooks.slack.com/services///").unwrap();
+
+    let url : &str = &(env::var("SLACK_WEBHOOKS").unwrap());
+
+    let slack = Slack::new(url).unwrap();
+
     let p = PayloadBuilder::new()
       .text(msg)
       .channel("#random")
