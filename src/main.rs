@@ -27,12 +27,10 @@ fn get_token() -> egg_mode::Token {
 
     let con_token = egg_mode::KeyPair::new(api_key, api_secret);
     let access_token = egg_mode::KeyPair::new(access_token, access_token_secret);
-    let token = egg_mode::Token::Access {
+    egg_mode::Token::Access {
         consumer: con_token,
         access: access_token,
-    };
-
-    return token;
+    }
 
 }
 
@@ -56,7 +54,7 @@ fn get_tweets (username: &str) -> Vec<Tweet> {
         .unwrap()
         .to_vec();
 
-    match tweets.first().clone().map(|tweet| tweet.id - 1) {
+    match tweets.first().map(|tweet| tweet.id - 1) {
         Some(tweet_id) => {
             redisclient::set(tweet_id)
         }
