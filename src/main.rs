@@ -6,17 +6,17 @@ extern crate redis;
 
 use dotenv::dotenv;
 
-mod slackclient;
+mod publisher;
 mod twitterclient;
 mod redisclient;
 
-use slackclient::Publisher;
+use publisher::Publisher;
 
 fn main() {
 
     dotenv().ok();
 
-    let publisher = Box::new(slackclient::ConsolePublisher);
+    let publisher = Box::new(publisher::ConsolePublisher);
 
     for tweet in twitterclient::get_tweets("ThisWeekInRust") {
         publisher.publish(tweet.text.clone());
