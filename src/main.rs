@@ -16,7 +16,7 @@ fn main() {
 
     dotenv().ok();
 
-    let publisher = Box::new(slackclient::SlackPublisher);
+    let publisher = Box::new(slackclient::ConsolePublisher);
 
     for tweet in twitterclient::get_tweets("ThisWeekInRust") {
         publisher.publish(tweet.text.clone());
