@@ -10,12 +10,16 @@ mod slackclient;
 mod twitterclient;
 mod redisclient;
 
+use slackclient::Publisher;
+
 fn main() {
 
     dotenv().ok();
 
+    let publisher = Box::new(slackclient::SlackPublisher);
+
     for tweet in twitterclient::get_tweets("ThisWeekInRust") {
-        slackclient::slack_msg(tweet.text.clone());
+        publisher.publish(tweet.text.clone());
     }
 
 }

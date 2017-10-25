@@ -1,23 +1,39 @@
 use slack_hook::{Slack, PayloadBuilder};
 use std::env;
 
-pub fn slack_msg(msg: String) {
+pub trait Publisher {
+    fn publish(&self, message: String);
+}
 
-    let url : &str = &(env::var("SLACK_WEBHOOKS").unwrap());
+pub struct SlackPublisher;
 
-    let slack = Slack::new(url).unwrap();
+impl Publisher for SlackPublisher {
+    fn publish(&self, message: String) {
 
-    let p = PayloadBuilder::new()
-      .text(msg)
-      .channel("#random")
-      .username("This week in rust BOT")
-      .icon_url("https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png")
-      .build()
-      .unwrap();
+        let url : &str = &(env::var("SLACK_WEBHOOKS").unwrap());
 
-    let res = slack.send(&p);
-    match res {
-        Ok(()) => println!("ok"),
-        Err(x) => println!("ERR: {:?}",x)
+        let slack = Slack::new(url).unwrap();
+
+        let p = PayloadBuilder::new()
+        .text(message)
+        .channel("#random")
+        .username("This week in rust BOT")
+        .icon_url("https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png")
+        .build()
+        .unwrap();
+
+        let res = slack.send(&p);
+        match res {
+            Ok(()) => println!("ok"),
+            Err(x) => println!("ERR: {:?}",x)
+        }
+    }
+}
+
+pub struct ConsolePublisher;
+
+impl Publisher for ConsolePublisher {
+    fn publish(&self, message: String) {
+        println!("message: {}", message);
     }
 }
