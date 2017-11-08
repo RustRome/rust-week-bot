@@ -10,23 +10,25 @@ pub struct SlackPublisher;
 impl Publisher for SlackPublisher {
     fn publish(&self, message: String) {
 
-        let url : &str = &(env::var("SLACK_WEBHOOKS").unwrap());
+      let url = env::var("SLACK_WEBHOOKS")
+        .expect("no slack webhook URL defined");
 
-        let slack = Slack::new(url).unwrap();
+      let url_str : &str = &(url);
+      let slack = Slack::new(url_str).expect("no slack client");
 
-        let p = PayloadBuilder::new()
+      let payload = PayloadBuilder::new()
         .text(message)
         .channel("#random")
         .username("This week in rust BOT")
         .icon_url("https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png")
         .build()
-        .unwrap();
+        .expect("cannot create payload");
 
-        let res = slack.send(&p);
-        match res {
-            Ok(()) => println!("ok"),
-            Err(x) => println!("ERR: {:?}",x)
-        }
+      let res = slack.send(&payload);
+      match res {
+          Ok(()) => println!("ok"),
+          Err(x) => println!("ERR: {:?}",x)
+      }
     }
 }
 
