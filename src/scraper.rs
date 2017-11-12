@@ -21,25 +21,35 @@ fn get_html(u: &str) -> String {
   content
 }
 
-struct Item {
-  text: String,
-  link: String
+#[derive(Debug)]
+pub struct BlogItem {
+  pub text: String,
+  pub link: String
 }
 
 
-// format!("[{}]({})", node.text(), node.attr("href").expect("no href attribute")
-fn extract_content(html: String) -> String {
-  Document::from(html.as_str())
+fn extract_content(html: String) -> Page {
+  let document = Document::from(html.as_str());
+
+  let title = document
+    .find(Name("title"))
+    .next()
+    .unwrap()
+    .text();
+
+  let links = document
     .find(Name("ul"))
     .next()
     .unwrap()
     .find(Name("a"))
-    .map(|node: Node| Item{text: node.text(), link: node.attr("href").expect("no href").to_string()})
-    .fold(String::new(), |acc, item| acc + &format!("[{}]({})\n", item.text, item.link))
+    .map(|node: Node| BlogItem{text: node.text(), link: node.attr("href").expect("no href").to_string()})
+    .collect();
+
+  Page {title, links}
 }
 
 
-pub fn scrape_tweet(text: String) -> String {
+pub fn scrape_tweet(text: String) -> Page {
   let re: Regex = Regex::new(r"(http.*) .*").unwrap();
 
   let my_url = re.captures(&(text))
@@ -51,3 +61,12 @@ pub fn scrape_tweet(text: String) -> String {
   let html: String = get_html(my_url);
   extract_content(html)
 }
+
+
+#[derive(Debug)]
+pub struct Page {
+  pub title: String,
+  pub links: Vec<BlogItem>
+}
+
+
